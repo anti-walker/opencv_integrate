@@ -1,0 +1,3 @@
+1. 2025.12.16
+设置了BUILD_opencv_gapi": "OFF",如果设置为ON的话，会报错。
+output 'third_party/opencv/opencv_libs/lib/libopencv_gapi.so.410' was not created

@@ -1,0 +1,18 @@
+#.bazelrc
+
+# 默认开启 C++17
+build --cxxopt=-std=c++17
+build --host_cxxopt=-std=c++17
+
+build --cxxopt=-fdiagnostics-color=always
+
+# 优化编译输出，不显示过多的子命令
+build --ui_event_filters=-info,-debug,-warning
+
+# --- AMD64 (x86_64) 配置 ---
+build:amd64 --cpu=k8
+build:amd64 --copt=-march=x86-64
+
+# --- ARM64 (aarch64) 配置 ---
+build:arm64 --cpu=aarch64
+build:arm64 --copt=-march=armv8-a

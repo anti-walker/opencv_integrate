@@ -1,0 +1,73 @@
+# .clang-format
+# Based on clang-format 18, strictly follows the latest Google C++ Style Guide
+Language:        Cpp
+BasedOnStyle:    Google
+
+# Basic settings (Google Style Core)
+AccessModifierOffset: -4          # public/protected/private indented 4 spaces to the left
+AlignAfterOpenBracket: Align      # Align parameters in function calls/definitions
+AlignConsecutiveAssignments: true # Align consecutive assignments (e.g., int a = 1, b = 2;)
+AlignConsecutiveDeclarations: true
+AlignEscapedNewlines: Left
+AlignOperands:   true
+AllowShortFunctionsOnASingleLine: Inline  # Allow short functions on a single line (Google permits)
+AllowShortIfStatementsOnASingleLine: false
+AllowShortLoopsOnASingleLine: false
+AlwaysBreakTemplateDeclarations: Yes
+
+# Indentation and spaces (Google Style fixed values)
+IndentWidth:     4
+TabWidth:        4
+UseTab:          Never
+ContinuationIndentWidth: 4
+ColumnLimit:     100                # Google recommends max 80 columns (often relaxed to 100 in projects)
+Cpp11BracedListStyle: true
+
+# Space control
+SpacesInAngles:  false
+SpacesInCStyleCastParentheses: false
+SpacesInParentheses: false
+SpacesInSquareBrackets: false
+SpaceBeforeParens: Never           # No space after if/for/while etc. (Google Style)
+SpaceAfterCStyleCast: false
+SpaceBeforeAssignmentOperators: true
+
+# Line breaking rules
+BinPackArguments: false            # Don't pack arguments, one per line (clearer)
+BinPackParameters: false
+BreakBeforeBraces: Custom          # Braces don't start on new line (opposite of Allman, Google uses K&R variant)
+BraceWrapping:
+  AfterClass:      true            # Newline after class/struct
+  AfterControlStatement: true      # Newline after if/for/while etc. (Google 2024 latest recommendation)
+  AfterEnum:       true
+  AfterFunction:   true
+  AfterNamespace:  false
+  AfterStruct:     true
+  AfterUnion:      true
+  AfterExternBlock: true
+  BeforeCatch:     true
+  BeforeElse:      true
+  IndentBraces:    false
+
+# Pointer and reference alignment (Google Style classic)
+DerivePointerAlignment: false
+PointerAlignment: Left            # int* a; not int *a;
+
+# Other Google Style details
+ConstructorInitializerIndentWidth: 4
+NamespaceIndentation: None         # No extra indentation for namespace
+FixNamespaceComments: true
+
+# Google Style specific switches
+SortIncludes:    true             # Google requires manual include sorting (no auto-sort)
+IncludeBlocks:   Regroup           # But will regroup #include blocks
+
+# Comments (Google recommendations)
+ReflowComments:  true
+CommentPragmas:  '^ IWYU pragma:'
+
+# Latest clang-format 18 recommended options
+AllowShortCaseLabelsOnASingleLine: false
+BreakConstructorInitializers: BeforeComma
+ConstructorInitializerAllOnOneLineOrOnePerLine: false
+PackConstructorInitializers: Never

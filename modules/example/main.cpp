@@ -1,95 +1,138 @@
 #include <iostream>
+#include <opencv2/calib3d.hpp>  // Required for calibration and 3D reconstruction features
 #include <opencv2/imgcodecs.hpp>
 #include <opencv2/imgproc.hpp>
 #include <opencv2/opencv.hpp>
 #include <string>
+#include <vector>
 
 using namespace cv;
 using namespace std;
 
-// 辅助函数：根据输入路径构建输出路径
-string get_output_path(const string& input_path)
+/**
+ * Helper function: Constructs an output path based on the input path.
+ * e.g., "data/test.jpg" with suffix "_gray" -> "data/test_gray.jpg"
+ */
+string get_output_path(const string& input_path, const string& suffix)
 {
-    // 查找最后一个路径分隔符的位置
-    // 注意：在 Linux/Unix 系统中路径分隔符是 '/'
     size_t last_slash = input_path.find_last_of('/');
+    string dir_path   = (last_slash == string::npos) ? "" : input_path.substr(0, last_slash + 1);
+    string file_name =
+        (last_slash == string::npos) ? input_path : input_path.substr(last_slash + 1);
 
-    if(last_slash == string::npos)
+    size_t last_dot  = file_name.find_last_of('.');
+    string base_name = (last_dot == string::npos) ? file_name : file_name.substr(0, last_dot);
+    string extension = (last_dot == string::npos) ? ".jpg" : file_name.substr(last_dot);
+
+    return dir_path + base_name + suffix + extension;
+}
+
+/**
+ * Feature 1: Converts the image to grayscale and saves it.
+ * Modules used: imgproc, imgcodecs
+ */
+void process_to_grayscale(const Mat& input_image, const string& input_path)
+{
+    cout << "[Feature 1] Converting image to grayscale..." << endl;
+
+    Mat grayscale_image;
+    // Convert BGR color image to single-channel grayscale
+    cvtColor(input_image, grayscale_image, COLOR_BGR2GRAY);
+
+    string output_path = get_output_path(input_path, "_grayscale");
+
+    if(imwrite(output_path, grayscale_image))
     {
-        // 如果没有找到斜杠，说明文件在当前目录下
-        // 将输出文件命名为：grayscale_输入文件名
-        return "grayscale_" + input_path;
+        cout << "Success: Grayscale image saved to " << output_path << endl;
     }
     else
     {
-        // 找到了斜杠，提取路径和文件名
-        string dir_path  = input_path.substr(0, last_slash + 1);  // 路径（包含末尾的 /）
-        string file_name = input_path.substr(last_slash + 1);     // 文件名
+        cerr << "Error: Could not save grayscale image." << endl;
+    }
+}
 
-        // 查找文件扩展名的位置（例如 .jpg）
-        size_t last_dot = file_name.find_last_of('.');
+/**
+ * Feature 2: Attempts to detect chessboard corners.
+ * Module used: calib3d
+ */
+void detect_chessboard_features(const Mat& input_image, const string& input_path)
+{
+    cout << "\n[Feature 2] Calling calib3d module to detect chessboard..." << endl;
 
-        string base_name;
-        string extension;
+    Mat gray;
+    if(input_image.channels() > 1)
+    {
+        cvtColor(input_image, gray, COLOR_BGR2GRAY);
+    }
+    else
+    {
+        gray = input_image;
+    }
 
-        if(last_dot == string::npos)
+    // Set expected chessboard internal corners (columns x rows), e.g., 9x6
+    Size            board_size(9, 6);
+    vector<Point2f> corners;
+
+    // Core function from the calib3d module
+    bool found = findChessboardCorners(
+        gray, board_size, corners, CALIB_CB_ADAPTIVE_THRESH | CALIB_CB_NORMALIZE_IMAGE);
+
+    if(found)
+    {
+        cout << "Status: Success! Detected " << board_size.width << "x" << board_size.height
+             << " chessboard." << endl;
+
+        // Draw corners and save a preview in the same directory as the input
+        Mat preview = input_image.clone();
+        drawChessboardCorners(preview, board_size, corners, found);
+
+        string chess_output = get_output_path(input_path, "_chessboard_preview");
+        if(imwrite(chess_output, preview))
         {
-            // 没有扩展名
-            base_name = file_name;
-            extension = ".jpg";  // 默认使用 jpg 扩展名
+            cout << "Status: Detection preview saved to " << chess_output << endl;
         }
         else
         {
-            // 有扩展名
-            base_name = file_name.substr(0, last_dot);
-            extension = file_name.substr(last_dot);
+            cerr << "Error: Could not save chessboard preview." << endl;
         }
-
-        // 组合新的输出路径： 路径 + base_name + "_grayscale" + extension
-        return dir_path + base_name + "_grayscale" + extension;
+    }
+    else
+    {
+        cout << "Status: No 9x6 chessboard found." << endl;
+        cout << "Note: If this function runs without errors, libopencv_calib3d.so is successfully "
+                "linked."
+             << endl;
     }
 }
 
 int main(int argc, char** argv)
 {
+    // Basic argument check
     if(argc != 2)
     {
-        cerr << "用法: " << argv[0] << " <输入图片路径>" << endl;
-        cerr << "示例: bazel run //main:opencv_demo -- -- path/to/input.jpg" << endl;
+        cerr << "Usage: " << argv[0] << " <input_image_path>" << endl;
         return -1;
     }
 
     string image_path = argv[1];
 
-    // 1. 读取图片
-    Mat color_image = imread(image_path, IMREAD_COLOR);
-
-    if(color_image.empty())
+    // Load image
+    Mat img = imread(image_path, IMREAD_COLOR);
+    if(img.empty())
     {
-        cerr << "错误: 无法打开或找不到图片: " << image_path << endl;
+        cerr << "Error: Could not load image. Check path: " << image_path << endl;
         return -1;
     }
+    cout << "Loaded image: " << image_path << " [" << img.cols << "x" << img.rows << "]" << endl;
 
-    // 2. 转换成灰度图
-    Mat grayscale_image;
-    cvtColor(color_image, grayscale_image, COLOR_BGR2GRAY);
+    // --- Execute feature functions ---
 
-    // 3. 构建输出路径
-    string output_path = get_output_path(image_path);
+    // 1. Grayscale conversion logic
+    process_to_grayscale(img, image_path);
 
-    // 4. 保存灰度图
-    // 注意：由于是 bazel run，文件保存的位置是相对于 bazel 的执行目录，
-    // 如果输入路径是相对路径，则输出也相对于 bazel 执行目录。
-    bool success = imwrite(output_path, grayscale_image);
+    // 2. calib3d module logic (saving to the same directory)
+    detect_chessboard_features(img, image_path);
 
-    if(!success)
-    {
-        cerr << "错误: 无法保存图片到: " << output_path << endl;
-        // 可能是权限问题或路径不存在（如果路径的中间目录不存在）
-        return -1;
-    }
-
-    cout << "灰度图已成功保存到: " << output_path << endl;
-
+    cout << "\nAll operations completed." << endl;
     return 0;
 }

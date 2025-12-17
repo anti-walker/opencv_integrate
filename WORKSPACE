@@ -1,6 +1,9 @@
 workspace(name = "opencv_bazel_test")
 
 load("@bazel_tools//tools/build_defs/repo:http.bzl", "http_archive")
+load("//bazel/toolchains:toolchains.bzl", "register_badp_toolchains")
+
+register_badp_toolchains()
 
 # rules_foreign_cc (兼容 Bazel 5.3.2 的最新稳定版)
 http_archive(

@@ -1,0 +1,1 @@
+BADP_ARTIFACTORY_DEVPKG = "http://gis.breton.top:18082/artifactory/dev_packages/"

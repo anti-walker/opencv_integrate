@@ -3,11 +3,65 @@ load("@rules_foreign_cc//foreign_cc:defs.bzl", "cmake")
 package(default_visibility = ["//visibility:public"])
 
 cmake(
-    name = "opencv_libs",
+    name = "opencv_arm64",
+    cache_entries = {
+        "BUILD_SHARED_LIBS": "ON",
+        "CMAKE_BUILD_TYPE": "Release",
+        "CMAKE_INSTALL_PREFIX": "$$INSTALLDIR$$",
+        "CMAKE_EXE_LINKER_FLAGS": "-static-libgcc -static-libstdc++",
+
+        # 交叉编译关键配置
+        "CMAKE_SYSTEM_NAME": "Linux",
+        "CMAKE_SYSTEM_PROCESSOR": "aarch64",
+        "CMAKE_C_COMPILER": "/usr/bin/aarch64-linux-gnu-gcc",
+        "CMAKE_CXX_COMPILER": "/usr/bin/aarch64-linux-gnu-g++",
+        "CMAKE_SYSROOT": "/usr/aarch64-linux-gnu",
+
+        # 可选：禁用不需要的模块加速编译
+        # "BUILD_LIST": "core",
+        "BUILD_TESTS": "OFF",
+        "BUILD_PERF_TESTS": "OFF",
+        "BUILD_EXAMPLES": "OFF",
+        "BUILD_opencv_gapi": "OFF",
+        "BUILD_opencv_ts": "OFF",
+        "BUILD_opencv_apps": "OFF",
+
+        # 根据需要启用系统依赖（需主机上有对应头文件）
+        "WITH_FFMPEG": "ON",
+        "BUILD_FFMPEG": "ON",
+    },
+    lib_source = "@opencv_src//:all_srcs",
+    out_include_dir = "include/opencv4",
+    out_shared_libs = [
+        "libopencv_core.so.410",
+        "libopencv_calib3d.so.410",
+        "libopencv_dnn.so.410",
+        "libopencv_features2d.so.410",
+        "libopencv_flann.so.410",
+        "libopencv_highgui.so.410",
+        "libopencv_imgcodecs.so.410",
+        "libopencv_imgproc.so.410",
+        "libopencv_ml.so.410",
+        "libopencv_objdetect.so.410",
+        "libopencv_photo.so.410",
+        "libopencv_stitching.so.410",
+        "libopencv_video.so.410",
+        "libopencv_videoio.so.410",
+    ],
+
+    # 限制目标平台为 arm64
+    target_compatible_with = [
+        "@platforms//cpu:aarch64",
+        "@platforms//os:linux",
+    ],
+)
+
+cmake(
+    name = "opencv_x86",
     cache_entries = {
         "BUILD_SHARED_LIBS": "ON",  # 动态库
         # "BUILD_LIST": "core,imgproc,imgcodecs,highgui",  # 核心模块，加速构建
-        # "BUILD_LIST": "core",  # 核心模块，加速构建
+        "BUILD_LIST": "core",  # 核心模块，加速构建
         "BUILD_TESTS": "OFF",
         "BUILD_PERF_TESTS": "OFF",
         "BUILD_EXAMPLES": "OFF",
@@ -32,12 +86,11 @@ cmake(
     # out_shared_libs = glob(["libopencv_*.so*"]),
     # 关键：明确列出真实文件 + 两个符号链接
     out_shared_libs = [
-        "libopencv_calib3d.so.410",
         "libopencv_core.so.410",
+        "libopencv_calib3d.so.410",
         "libopencv_dnn.so.410",
         "libopencv_features2d.so.410",
         "libopencv_flann.so.410",
-        # "libopencv_gapi.so.410",
         "libopencv_highgui.so.410",
         "libopencv_imgcodecs.so.410",
         "libopencv_imgproc.so.410",
@@ -45,14 +98,18 @@ cmake(
         "libopencv_objdetect.so.410",
         "libopencv_photo.so.410",
         "libopencv_stitching.so.410",
-        # "libopencv_ts.so.410",
         "libopencv_video.so.410",
         "libopencv_videoio.so.410",
+        # "libopencv_gapi.so.410",
+        # "libopencv_ts.so.410",
     ],
 )
 
-# 用 alias 或 filegroup 暴露给下游（cmake 规则本身已自动传播 include 和库）
 alias(
     name = "opencv",
-    actual = ":opencv_libs",
+    actual = select({
+        "//bazel/platforms:config_arm": ":opencv_arm64",
+        "//conditions:default": ":opencv_x86",  # x86_64 或其他平台默认用 native 版本
+    }),
+    visibility = ["//visibility:public"],
 )

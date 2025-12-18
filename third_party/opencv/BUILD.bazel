@@ -9,24 +9,19 @@ cmake(
         "CMAKE_BUILD_TYPE": "Release",
         "CMAKE_INSTALL_PREFIX": "$$INSTALLDIR$$",
         "CMAKE_EXE_LINKER_FLAGS": "-static-libgcc -static-libstdc++",
-
-        # 交叉编译关键配置
         "CMAKE_SYSTEM_NAME": "Linux",
         "CMAKE_SYSTEM_PROCESSOR": "aarch64",
         "CMAKE_C_COMPILER": "/usr/bin/aarch64-linux-gnu-gcc",
         "CMAKE_CXX_COMPILER": "/usr/bin/aarch64-linux-gnu-g++",
         "CMAKE_SYSROOT": "/usr/aarch64-linux-gnu",
 
-        # 可选：禁用不需要的模块加速编译
-        # "BUILD_LIST": "core",
+        # "BUILD_LIST": "core,imgproc,imgcodecs,highgui",  # will build all main modules without build_list
         "BUILD_TESTS": "OFF",
         "BUILD_PERF_TESTS": "OFF",
         "BUILD_EXAMPLES": "OFF",
         "BUILD_opencv_gapi": "OFF",
         "BUILD_opencv_ts": "OFF",
         "BUILD_opencv_apps": "OFF",
-
-        # 根据需要启用系统依赖（需主机上有对应头文件）
         "WITH_FFMPEG": "ON",
         "BUILD_FFMPEG": "ON",
     },
@@ -48,8 +43,6 @@ cmake(
         "libopencv_video.so.410",
         "libopencv_videoio.so.410",
     ],
-
-    # 限制目标平台为 arm64
     target_compatible_with = [
         "@platforms//cpu:aarch64",
         "@platforms//os:linux",
@@ -59,9 +52,8 @@ cmake(
 cmake(
     name = "opencv_x86",
     cache_entries = {
-        "BUILD_SHARED_LIBS": "ON",  # 动态库
-        # "BUILD_LIST": "core,imgproc,imgcodecs,highgui",  # 核心模块，加速构建
-        "BUILD_LIST": "core",  # 核心模块，加速构建
+        "BUILD_SHARED_LIBS": "ON",
+        # "BUILD_LIST": "core,imgproc,imgcodecs,highgui",  # will build all main modules without build_list
         "BUILD_TESTS": "OFF",
         "BUILD_PERF_TESTS": "OFF",
         "BUILD_EXAMPLES": "OFF",
@@ -81,10 +73,7 @@ cmake(
         "CMAKE_BUILD_TYPE": "Release",
     },
     lib_source = "@opencv_src//:all_srcs",
-    # 关键：OpenCV 4.x 安装后头文件在 include/opencv4/opencv2/
     out_include_dir = "include/opencv4",
-    # out_shared_libs = glob(["libopencv_*.so*"]),
-    # 关键：明确列出真实文件 + 两个符号链接
     out_shared_libs = [
         "libopencv_core.so.410",
         "libopencv_calib3d.so.410",
@@ -109,7 +98,7 @@ alias(
     name = "opencv",
     actual = select({
         "//bazel/platforms:config_arm": ":opencv_arm64",
-        "//conditions:default": ":opencv_x86",  # x86_64 或其他平台默认用 native 版本
+        "//conditions:default": ":opencv_x86",
     }),
     visibility = ["//visibility:public"],
 )
